@@ -84,7 +84,7 @@ public class ProfileZipSlip extends ProfileUploadBase {
           continue; // ignoramos la entrada maliciosa y continuamos con las demás
         }
 
-        // ✅ Creamos los directorios padre si la entrada es un directorio o tiene subdirectorios
+        // ✅ Creamos los directorios padre si la entrada es un directorio o tiene subdirectorios and jajas  
         if (e.isDirectory()) {
           f.mkdirs();
           continue;
