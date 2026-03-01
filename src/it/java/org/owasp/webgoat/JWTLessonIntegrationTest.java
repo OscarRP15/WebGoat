@@ -117,8 +117,7 @@ public class JWTLessonIntegrationTest extends IntegrationTest {
             .path("lessonCompleted"),
         CoreMatchers.is(true));
   }
-
-  private void resetVotes() throws IOException {
+private void resetVotes() throws IOException {
     String accessToken =
         RestAssured.given()
             .when()
@@ -129,83 +128,51 @@ public class JWTLessonIntegrationTest extends IntegrationTest {
             .extract()
             .cookie("access_token");
 
-    String header = accessToken.substring(0, accessToken.indexOf("."));
-    header = new String(Base64.getUrlDecoder().decode(header.getBytes(Charset.defaultCharset())));
-
     String body = accessToken.substring(1 + accessToken.indexOf("."), accessToken.lastIndexOf("."));
     body = new String(Base64.getUrlDecoder().decode(body.getBytes(Charset.defaultCharset())));
 
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode headerNode = mapper.readTree(header);
-    headerNode = ((ObjectNode) headerNode).put("alg", "NONE");
-
     JsonNode bodyObject = mapper.readTree(body);
     bodyObject = ((ObjectNode) bodyObject).put("admin", "true");
 
-    String replacedToken =
-        new String(Base64.getUrlEncoder().encode(headerNode.toString().getBytes()))
-            .concat(".")
-            .concat(
-                new String(Base64.getUrlEncoder().encode(bodyObject.toString().getBytes()))
-                    .toString())
-            .concat(".")
-            .replace("=", "");
+    String newToken = Jwts.builder()
+        .setClaims(mapper.convertValue(bodyObject, Map.class))
+        .signWith(SignatureAlgorithm.HS512, org.owasp.webgoat.lessons.jwt.JWTVotesEndpoint.JWT_PASSWORD)
+        .compact();
 
     MatcherAssert.assertThat(
         RestAssured.given()
             .when()
             .relaxedHTTPSValidation()
             .cookie("JSESSIONID", getWebGoatCookie())
-            .cookie("access_token", replacedToken)
+            .cookie("access_token", newToken)
             .post(url("/WebGoat/JWT/votings"))
             .then()
             .statusCode(200)
             .extract()
             .path("lessonCompleted"),
         CoreMatchers.is(true));
-  }
-
-  private void buyAsTom() throws IOException {
-
-    String header =
-        new String(
-            Base64.getUrlDecoder()
-                .decode("eyJhbGciOiJIUzUxMiJ9".getBytes(Charset.defaultCharset())));
-
-    String body =
-        new String(
-            Base64.getUrlDecoder()
-                .decode(
-                    "eyJhZG1pbiI6ImZhbHNlIiwidXNlciI6IkplcnJ5In0"
-                        .getBytes(Charset.defaultCharset())));
-
-    body = body.replace("Jerry", "Tom");
-
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode headerNode = mapper.readTree(header);
-    headerNode = ((ObjectNode) headerNode).put("alg", "NONE");
-
-    String replacedToken =
-        new String(Base64.getUrlEncoder().encode(headerNode.toString().getBytes()))
-            .concat(".")
-            .concat(new String(Base64.getUrlEncoder().encode(body.getBytes())).toString())
-            .concat(".")
-            .replace("=", "");
+}
+ private void buyAsTom() throws IOException {
+    String token = Jwts.builder()
+        .claim("admin", "false")
+        .claim("user", "Tom")
+        .signWith(SignatureAlgorithm.HS512, "bm5n3SkxCX4kKRy4")
+        .compact();
 
     MatcherAssert.assertThat(
         RestAssured.given()
             .when()
             .relaxedHTTPSValidation()
             .cookie("JSESSIONID", getWebGoatCookie())
-            .header("Authorization", "Bearer " + replacedToken)
+            .header("Authorization", "Bearer " + token)
             .post(url("/WebGoat/JWT/refresh/checkout"))
             .then()
             .statusCode(200)
             .extract()
             .path("lessonCompleted"),
         CoreMatchers.is(true));
-  }
-
+}
   private void deleteTom() {
 
     Map<String, Object> header = new HashMap();
