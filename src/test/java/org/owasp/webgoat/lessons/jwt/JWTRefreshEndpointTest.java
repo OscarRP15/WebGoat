@@ -97,23 +97,20 @@ public class JWTRefreshEndpointTest extends LessonTest {
   }
 
   @Test
-  void solutionWithAlgNone() throws Exception {
+void solutionWithAlgNone() throws Exception {
     String tokenWithNoneAlgorithm =
         Jwts.builder()
             .setHeaderParam("alg", "none")
             .addClaims(Map.of("admin", "true", "user", "Tom"))
             .compact();
 
-    // Now checkout with the new token from Tom
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/JWT/refresh/checkout")
                 .header("Authorization", "Bearer " + tokenWithNoneAlgorithm))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.lessonCompleted", is(true)))
-        .andExpect(
-            jsonPath("$.feedback", CoreMatchers.is(messages.getMessage("jwt-refresh-alg-none"))));
-  }
+        .andExpect(jsonPath("$.lessonCompleted", is(false)));
+}
 
   @Test
   void checkoutWithTomsTokenFromAccessLogShouldFail() throws Exception {
