@@ -55,14 +55,15 @@ public class JWTVotesEndpointTest extends LessonTest {
   }
 
   @Test
-  public void solveAssignment() throws Exception {
-    // Create new token and set alg to none and do not sign it
+public void solveAssignment() throws Exception {
     Claims claims = Jwts.claims();
     claims.put("admin", "true");
     claims.put("user", "Tom");
-    String token = Jwts.builder().setClaims(claims).setHeaderParam("alg", "none").compact();
+    String token = Jwts.builder()
+        .setClaims(claims)
+        .signWith(io.jsonwebtoken.SignatureAlgorithm.HS512, JWT_PASSWORD)
+        .compact();
 
-    // Call the reset endpoint
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/JWT/votings")
@@ -70,17 +71,18 @@ public class JWTVotesEndpointTest extends LessonTest {
                 .cookie(new Cookie("access_token", token)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.lessonCompleted", is(true)));
-  }
+}
 
   @Test
-  public void solveAssignmentWithBoolean() throws Exception {
-    // Create new token and set alg to none and do not sign it
+public void solveAssignmentWithBoolean() throws Exception {
     Claims claims = Jwts.claims();
     claims.put("admin", true);
     claims.put("user", "Tom");
-    String token = Jwts.builder().setClaims(claims).setHeaderParam("alg", "none").compact();
+    String token = Jwts.builder()
+        .setClaims(claims)
+        .signWith(io.jsonwebtoken.SignatureAlgorithm.HS512, JWT_PASSWORD)
+        .compact();
 
-    // Call the reset endpoint
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/JWT/votings")
@@ -88,7 +90,7 @@ public class JWTVotesEndpointTest extends LessonTest {
                 .cookie(new Cookie("access_token", token)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.lessonCompleted", is(true)));
-  }
+}
 
   @Test
   public void resetWithoutTokenShouldNotWork() throws Exception {
