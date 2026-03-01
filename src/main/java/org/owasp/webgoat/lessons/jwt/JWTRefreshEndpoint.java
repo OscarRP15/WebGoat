@@ -27,7 +27,6 @@ import static org.springframework.http.ResponseEntity.ok;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Header;
-import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -97,32 +96,30 @@ public class JWTRefreshEndpoint extends AssignmentEndpoint {
     return tokenJson;
   }
 
- @PostMapping("/JWT/refresh/checkout")
-@ResponseBody
-public ResponseEntity<AttackResult> checkout(
-    @RequestHeader(value = "Authorization", required = false) String token) {
-  if (token == null) {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-  }
-  try {
-    Jws<Claims> jws = Jwts.parser()
-        .setSigningKey(JWT_PASSWORD)
-        .parseClaimsJws(token.replace("Bearer ", ""));
-    Claims claims = jws.getBody();
-    String user = (String) claims.get("user");
-    if ("Tom".equals(user)) {
-      if ("none".equals(jws.getHeader().getAlgorithm())) {
-        return ok(success(this).feedback("jwt-refresh-alg-none").build());
-      }
-      return ok(success(this).build());
+  @PostMapping("/JWT/refresh/checkout")
+  @ResponseBody
+  public ResponseEntity<AttackResult> checkout(
+      @RequestHeader(value = "Authorization", required = false) String token) {
+    if (token == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
-    return ok(failed(this).feedback("jwt-refresh-not-tom").feedbackArgs(user).build());
-  } catch (ExpiredJwtException e) {
-    return ok(failed(this).output(e.getMessage()).build());
-  } catch (JwtException e) {
-    return ok(failed(this).feedback("jwt-invalid-token").build());
+    try {
+      Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parse(token.replace("Bearer ", ""));
+      Claims claims = (Claims) jwt.getBody();
+      String user = (String) claims.get("user");
+      if ("Tom".equals(user)) {
+        if ("none".equals(jwt.getHeader().get("alg"))) {
+          return ok(success(this).feedback("jwt-refresh-alg-none").build());
+        }
+        return ok(success(this).build());
+      }
+      return ok(failed(this).feedback("jwt-refresh-not-tom").feedbackArgs(user).build());
+    } catch (ExpiredJwtException e) {
+      return ok(failed(this).output(e.getMessage()).build());
+    } catch (JwtException e) {
+      return ok(failed(this).feedback("jwt-invalid-token").build());
+    }
   }
-}
 
   @PostMapping("/JWT/refresh/newToken")
   @ResponseBody
@@ -136,15 +133,14 @@ public ResponseEntity<AttackResult> checkout(
     String user;
     String refreshToken;
     try {
-  Jws<Claims> jws = Jwts.parser()
-      .setSigningKey(JWT_PASSWORD)
-      .parseClaimsJws(token.replace("Bearer ", ""));
-  user = (String) jws.getBody().get("user");
-  refreshToken = (String) json.get("refresh_token");
-} catch (ExpiredJwtException e) {
-  user = (String) e.getClaims().get("user");
-  refreshToken = (String) json.get("refresh_token");
-}
+      Jwt<Header, Claims> jwt =
+          Jwts.parser().setSigningKey(JWT_PASSWORD).parse(token.replace("Bearer ", ""));
+      user = (String) jwt.getBody().get("user");
+      refreshToken = (String) json.get("refresh_token");
+    } catch (ExpiredJwtException e) {
+      user = (String) e.getClaims().get("user");
+      refreshToken = (String) json.get("refresh_token");
+    }
 
     if (user == null || refreshToken == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
