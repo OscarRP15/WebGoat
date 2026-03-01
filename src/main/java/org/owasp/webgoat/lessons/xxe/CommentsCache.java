@@ -93,20 +93,20 @@ public class CommentsCache {
    * progress etc). In real life the XmlMapper bean defined above will be used automatically and the
    * Comment class can be directly used in the controller method (instead of a String)
    */
-  protected Comment parseXml(String xml) throws JAXBException, XMLStreamException {
+protected Comment parseXml(String xml) throws JAXBException, XMLStreamException {
     var jc = JAXBContext.newInstance(Comment.class);
     var xif = XMLInputFactory.newInstance();
 
-   // SEGURO: siempre deshabilita entidades externas
+    // Siempre deshabilitar acceso a entidades externas
     xif.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
     xif.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+    xif.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.FALSE);
+    xif.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE); // opcional pero recomendado
 
     var xsr = xif.createXMLStreamReader(new StringReader(xml));
-
     var unmarshaller = jc.createUnmarshaller();
     return (Comment) unmarshaller.unmarshal(xsr);
-  }
-
+}
   protected Optional<Comment> parseJson(String comment) {
     ObjectMapper mapper = new ObjectMapper();
     try {
