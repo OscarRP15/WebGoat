@@ -68,30 +68,9 @@ public class ProfileZipSlip extends ProfileUploadBase {
 
       ZipFile zip = new ZipFile(uploadedZipFile.toFile());
       Enumeration<? extends ZipEntry> entries = zip.entries();
-
-      // ✅ Obtenemos la ruta canónica del directorio base una sola vez
-      String canonicalTmpDir = tmpZipDirectory.toFile().getCanonicalPath();
-
       while (entries.hasMoreElements()) {
         ZipEntry e = entries.nextElement();
         File f = new File(tmpZipDirectory.toFile(), e.getName());
-
-        // ✅ Validación anti Zip Slip: comprobamos que la ruta canónica
-        // del fichero destino esté dentro del directorio temporal permitido
-        String canonicalDestFile = f.getCanonicalPath();
-        if (!canonicalDestFile.startsWith(canonicalTmpDir + File.separator)) {
-          log.warn("Zip Slip attempt detected, skipping entry: {}", e.getName());
-          continue; // ignoramos la entrada maliciosa y continuamos con las demás
-        }
-
-        // ✅ Creamos los directorios padre si la entrada es un directorio o tiene subdirectorios and jajas  
-        if (e.isDirectory()) {
-          f.mkdirs();
-          continue;
-        } else {
-          f.getParentFile().mkdirs();
-        }
-
         InputStream is = zip.getInputStream(e);
         Files.copy(is, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
       }
